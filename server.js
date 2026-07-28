@@ -242,7 +242,11 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'start_game' && ws.id === room.hostId && room.phase === 'lobby') {
-      if (room.players.length < 2) return;
+      if (room.players.length < 2) {
+        const player = room.players.find(p => p.id === ws.id);
+        if (player) sendTo(player, { type: 'error', message: 'Precisa de pelo menos 2 jogadores pra começar.' });
+        return;
+      }
       room.currentRound = 1;
       startRound(room);
       return;

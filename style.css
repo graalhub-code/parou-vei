@@ -176,3 +176,9 @@ input:focus { border-color: var(--coral); }
 .podio-pts { font-size: 11px; color: var(--coral-texto); }
 
 .trofeu { font-size: 22px; }
+
+.toast {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  background: var(--danger); color: #FCEBEB; font-size: 13px; padding: 8px 16px;
+  border-radius: 999px; z-index: 50; max-width: 90%; text-align: center;
+}

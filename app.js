@@ -15,8 +15,7 @@ function connect() {
   ws = new WebSocket(proto + '://' + location.host);
   ws.onmessage = (ev) => handleMessage(JSON.parse(ev.data));
   ws.onclose = () => {
-    el('erro-entrada').textContent = 'Conexão perdida. Recarregue a página.';
-    el('erro-entrada').classList.remove('hidden');
+    showToast('Conexão perdida. Recarregue a página.');
   };
 }
 connect();
@@ -25,10 +24,18 @@ function send(msg) {
   if (ws.readyState === 1) ws.send(JSON.stringify(msg));
 }
 
+let toastTimeout = null;
+function showToast(texto) {
+  const t = el('toast');
+  t.textContent = texto;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.add('hidden'), 3500);
+}
+
 function handleMessage(msg) {
   if (msg.type === 'error') {
-    el('erro-entrada').textContent = msg.message;
-    el('erro-entrada').classList.remove('hidden');
+    showToast(msg.message);
     return;
   }
   if (msg.type === 'joined') {
@@ -83,20 +90,16 @@ el('btn-mostrar-entrar').onclick = () => {
 };
 el('btn-criar-sala').onclick = () => {
   const nick = el('input-nickname').value.trim();
-  if (!nick) return showErro('Digite seu apelido.');
+  if (!nick) return showToast('Digite seu apelido.');
   send({ type: 'create_room', nickname: nick });
 };
 el('btn-entrar-sala').onclick = () => {
   const nick = el('input-nickname').value.trim();
   const code = el('input-codigo').value.trim().toUpperCase();
-  if (!nick) return showErro('Digite seu apelido.');
-  if (!code) return showErro('Digite o código da sala.');
+  if (!nick) return showToast('Digite seu apelido.');
+  if (!code) return showToast('Digite o código da sala.');
   send({ type: 'join_room', nickname: nick, code });
 };
-function showErro(t) {
-  el('erro-entrada').textContent = t;
-  el('erro-entrada').classList.remove('hidden');
-}
 
 // ---------- lobby ----------
 function renderLobby(room) {
@@ -110,7 +113,7 @@ function renderLobby(room) {
     div.className = 'jogador-item';
     div.innerHTML = `<div class="avatar">${p.nickname.slice(0, 2).toUpperCase()}</div>
       <span class="jogador-nome">${p.nickname}${p.id === meId ? ' (você)' : ''}</span>
-      ${p.id === room.hostId ? '<span class="crown">&#9819;</span>' : ''}`;
+      ${p.id === room.hostId ? '<i class="ti ti-crown crown"></i>' : ''}`;
     lista.appendChild(div);
   }
 
@@ -131,7 +134,15 @@ function renderLobby(room) {
     });
   }
 }
-el('btn-iniciar').onclick = () => send({ type: 'start_game' });
+el('btn-iniciar').onclick = () => {
+  if (!currentRoom || currentRoom.players.length < 2) {
+    return showToast('Precisa de pelo menos 2 jogadores pra começar.');
+  }
+  send({ type: 'start_game' });
+};
+el('btn-voltar-lobby').onclick = () => {
+  location.reload();
+};
 
 // ---------- jogo ----------
 function renderRound(msg) {
@@ -266,6 +277,7 @@ function aplicarResultadoVotacao(msg) {
 // ---------- podio ----------
 function renderPodio(leaderboard) {
   const cores = ['#FAC775', '#D3D1C7', '#F0997B'];
+  const coresTrofeu = ['#BA7517', '#888780', '#D85A30'];
   const alturas = [90, 60, 44];
   const top3 = leaderboard.slice(0, 3);
   const ordemVisual = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3;
@@ -278,7 +290,7 @@ function renderPodio(leaderboard) {
     const div = document.createElement('div');
     div.className = 'podio-item';
     div.innerHTML = `
-      <span class="trofeu">&#127942;</span>
+      <i class="ti ti-trophy trofeu" style="color:${coresTrofeu[posicaoReal]}"></i>
       <div class="podio-barra" style="height:${alturas[posicaoReal]}px;background:${cores[posicaoReal]}">
         <span>${posicaoReal + 1}º</span>
       </div>

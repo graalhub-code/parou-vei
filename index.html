@@ -4,10 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 <title>Parou, vei!</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="phone">
+
+  <div id="toast" class="toast hidden"></div>
 
   <section id="screen-entrada" class="screen active">
     <div class="dot dot-a"></div>
@@ -55,6 +58,7 @@
     <p id="lobby-espera" class="hint hidden">Aguardando o host iniciar a partida...</p>
 
     <button id="btn-iniciar" class="btn btn-primary hidden">Iniciar partida</button>
+    <button id="btn-voltar-lobby" class="btn btn-outline">Voltar</button>
   </section>
 
   <section id="screen-jogo" class="screen">
@@ -70,7 +74,7 @@
 
     <div id="banner-parou" class="banner-parou hidden">
       <div class="banner-caixa">
-        <i class="hand">✋</i>
+        <i class="ti ti-hand-stop hand"></i>
         <p id="banner-texto">Alguém parou!</p>
         <p class="banner-sub">Congelando respostas...</p>
       </div>
