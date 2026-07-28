@@ -3,7 +3,7 @@ function capitalizeFirst(texto) {
   if (!texto) return texto;
   return texto.charAt(0).toLocaleUpperCase('pt-BR') + texto.slice(1);
 }
-const screens = ['entrada', 'lobby', 'jogo', 'resultado', 'podio'];
+const screens = ['entrada', 'lobby', 'jogo', 'resultado', 'desempate', 'podio'];
 function showScreen(name) {
   for (const s of screens) el('screen-' + s).classList.toggle('active', s === name);
 }
@@ -81,12 +81,22 @@ function handleMessage(msg) {
     aplicarResultadoVotacao(msg);
     return;
   }
+  if (msg.type === 'tiebreak_start') {
+    renderDesempate(msg);
+    showScreen('desempate');
+    return;
+  }
+  if (msg.type === 'tiebreak_result') {
+    ultimoResultadoDesempate = msg;
+    return;
+  }
   if (msg.type === 'game_over') {
     renderPodio(msg.leaderboard);
     showScreen('podio');
     return;
   }
 }
+let ultimoResultadoDesempate = null;
 
 // ---------- entrada ----------
 el('btn-mostrar-entrar').onclick = () => {
@@ -136,6 +146,21 @@ function renderLobby(room) {
       chip.onclick = () => send({ type: 'set_rounds', rounds: n });
       chipsWrap.appendChild(chip);
     });
+
+    const chipsVotacao = el('chips-votacao');
+    chipsVotacao.innerHTML = '';
+    [5000, 10000, 15000, 20000].forEach(ms => {
+      const chip = document.createElement('span');
+      chip.className = 'chip' + (ms === room.voteDurationMs ? ' selected' : '');
+      chip.textContent = (ms / 1000) + 's';
+      chip.onclick = () => send({ type: 'set_vote_duration', voteDurationMs: ms });
+      chipsVotacao.appendChild(chip);
+    });
+
+    el('toggle-desempate').checked = room.tiebreakEnabled !== false;
+    el('toggle-desempate').onchange = (e) => send({ type: 'set_tiebreak', enabled: e.target.checked });
+    el('toggle-bahia').checked = !!room.bahiaEnabled;
+    el('toggle-bahia').onchange = (e) => send({ type: 'set_bahia', enabled: e.target.checked });
   }
 }
 el('btn-iniciar').onclick = () => {
@@ -153,14 +178,16 @@ function renderRound(msg) {
   el('jogo-rodada').textContent = `Rodada ${msg.currentRound}/${msg.totalRounds}`;
   el('jogo-letra').textContent = msg.letter;
   el('banner-parou').classList.add('hidden');
+  el('banner-bahia').classList.toggle('hidden', !msg.isBahia);
   el('btn-parei').disabled = false;
 
   const wrap = el('campos-categorias');
   wrap.innerHTML = '';
   for (const cat of msg.categories) {
     const item = document.createElement('div');
-    item.className = 'campo-item';
-    item.innerHTML = `<label>${cat}</label><input type="text" data-cat="${cat}" autocomplete="off" />`;
+    item.className = 'campo-item' + (msg.isBahia ? ' baiana' : '');
+    const rotulo = msg.isBahia ? `${cat} 🎉` : cat;
+    item.innerHTML = `<label>${rotulo}</label><input type="text" data-cat="${cat}" autocomplete="off" />`;
     wrap.appendChild(item);
     const input = item.querySelector('input');
     input.oninput = () => {
@@ -283,6 +310,56 @@ function aplicarResultadoVotacao(msg) {
     }
   }
 }
+
+// ---------- desempate ----------
+let desempateInterval = null;
+let desempateEnviado = false;
+
+function renderDesempate(msg) {
+  clearInterval(votacaoInterval);
+  clearInterval(countdownTimer);
+  desempateEnviado = false;
+
+  const nomes = msg.players.join(' e ');
+  el('desempate-titulo').textContent = `${nomes} empataram! Hora do desempate.`;
+  el('desempate-categoria').textContent = msg.category;
+  el('desempate-letra').textContent = msg.letter;
+  el('desempate-categoria-label').textContent = msg.category;
+  el('desempate-input').value = '';
+  el('btn-desempate-enviar').disabled = false;
+
+  const souParticipante = msg.playerIds.includes(meId);
+  el('desempate-campo').classList.toggle('hidden', !souParticipante);
+  el('btn-desempate-enviar').classList.toggle('hidden', !souParticipante);
+  el('desempate-espera').classList.toggle('hidden', souParticipante);
+  if (souParticipante) el('desempate-espera').textContent = 'Aguardando os jogadores empatados responderem...';
+
+  let restante = Math.floor(msg.maxMs / 1000);
+  el('desempate-timer').textContent = restante + 's';
+  clearInterval(desempateInterval);
+  desempateInterval = setInterval(() => {
+    restante -= 1;
+    if (restante <= 0) { clearInterval(desempateInterval); return; }
+    el('desempate-timer').textContent = restante + 's';
+  }, 1000);
+}
+
+el('desempate-input').oninput = () => {
+  const cursor = el('desempate-input').selectionStart;
+  const capitalizado = capitalizeFirst(el('desempate-input').value);
+  if (capitalizado !== el('desempate-input').value) {
+    el('desempate-input').value = capitalizado;
+    el('desempate-input').setSelectionRange(cursor, cursor);
+  }
+};
+el('btn-desempate-enviar').onclick = () => {
+  if (desempateEnviado) return;
+  desempateEnviado = true;
+  send({ type: 'tiebreak_answer', value: el('desempate-input').value });
+  el('btn-desempate-enviar').disabled = true;
+  el('desempate-espera').classList.remove('hidden');
+  el('desempate-espera').textContent = 'Resposta enviada. Aguardando o outro jogador...';
+};
 
 // ---------- podio ----------
 function renderPodio(leaderboard) {

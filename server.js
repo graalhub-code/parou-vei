@@ -15,11 +15,17 @@ const CATEGORY_POOL = [
   'Marca', 'Comida', 'Esporte', 'Cantor ou banda', 'Personagem', 'Roupa',
   'Instrumento musical', 'Time de futebol', 'Sobrenome', 'Cidade', 'Bebida', 'Verbo',
 ];
+const BAHIA_CATEGORY_POOL = [
+  'Gíria baiana', 'Comida baiana', 'Ponto turístico da Bahia', 'Cantor ou banda baiano',
+  'Bloco de carnaval', 'Expressão baiana', 'Praia baiana', 'Prato típico baiano',
+];
 const CATEGORIES_PER_ROUND = 4;
 const MAX_PLAYERS = 10;
 const ROUND_MAX_MS = 60000;
 const FREEZE_GRACE_MS = 1000;
-const CHALLENGE_VOTE_MS = 10000;
+const DEFAULT_VOTE_MS = 10000;
+const VOTE_DURATION_OPTIONS = [5000, 10000, 15000, 20000];
+const TIEBREAK_MS = 20000;
 const LETTERS = 'ABCDEFGHIJLMNOPQRSTU'.split('');
 
 const rooms = new Map();
@@ -51,6 +57,31 @@ function pickRoundCategories(room) {
   return picked;
 }
 
+function pickRandomCategories(pool, count) {
+  const copy = [...pool];
+  const picked = [];
+  for (let i = 0; i < count && copy.length > 0; i++) {
+    const idx = Math.floor(Math.random() * copy.length);
+    picked.push(copy[idx]);
+    copy.splice(idx, 1);
+  }
+  return picked;
+}
+
+function buildLeaderboard(room) {
+  const order = room.tiebreakOrder || [];
+  return room.players
+    .slice()
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const ia = order.indexOf(a.id);
+      const ib = order.indexOf(b.id);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      return 0;
+    })
+    .map(p => ({ id: p.id, nickname: p.nickname, score: p.score }));
+}
+
 function roomPublicState(room) {
   return {
     code: room.code,
@@ -60,6 +91,9 @@ function roomPublicState(room) {
     currentRound: room.currentRound,
     letter: room.letter,
     categories: room.currentCategories || [],
+    voteDurationMs: room.voteDurationMs,
+    tiebreakEnabled: room.tiebreakEnabled,
+    bahiaEnabled: room.bahiaEnabled,
     players: room.players.map(p => ({ id: p.id, nickname: p.nickname, score: p.score, connected: !!p.ws })),
   };
 }
@@ -82,7 +116,11 @@ function broadcastState(room) {
 function startRound(room) {
   room.phase = 'playing';
   room.letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  room.currentCategories = pickRoundCategories(room);
+  const isBahia = room.bahiaEnabled && room.currentRound === room.bahiaRoundNumber;
+  room.isBahiaRound = isBahia;
+  room.currentCategories = isBahia
+    ? pickRandomCategories(BAHIA_CATEGORY_POOL, CATEGORIES_PER_ROUND)
+    : pickRoundCategories(room);
   room.answers = {};
   room.frozen = false;
   room.freezeDeadline = null;
@@ -98,6 +136,7 @@ function startRound(room) {
     currentRound: room.currentRound,
     totalRounds: room.totalRounds,
     maxMs: ROUND_MAX_MS,
+    isBahia,
   });
 }
 
@@ -154,9 +193,7 @@ function finalizeRound(room, stoppedByPlayerId) {
     letter: room.letter,
     perCategory,
     roundTotals,
-    leaderboard: room.players
-      .map(p => ({ id: p.id, nickname: p.nickname, score: p.score }))
-      .sort((a, b) => b.score - a.score),
+    leaderboard: buildLeaderboard(room),
     currentRound: room.currentRound,
     totalRounds: room.totalRounds,
   });
@@ -186,25 +223,86 @@ function resolveChallenge(room) {
     derrubado,
     votosValidos: validos,
     votosInvalidos: invalidos,
-    leaderboard: room.players
-      .map(p => ({ id: p.id, nickname: p.nickname, score: p.score }))
-      .sort((a, b) => b.score - a.score),
+    leaderboard: buildLeaderboard(room),
   });
 
   room.activeChallenge = null;
+}
+
+function checkForTieOrEnd(room) {
+  const sorted = room.players.slice().sort((a, b) => b.score - a.score);
+  const topScore = sorted.length ? sorted[0].score : 0;
+  const tied = sorted.filter(p => p.score === topScore);
+
+  if (tied.length > 1 && room.tiebreakEnabled && !room.tiebreakDone) {
+    startTiebreak(room, tied.map(p => p.id));
+    return;
+  }
+
+  room.phase = 'podium';
+  broadcast(room, { type: 'game_over', leaderboard: buildLeaderboard(room) });
+}
+
+function startTiebreak(room, tiedIds) {
+  room.phase = 'tiebreak';
+  room.tiebreakPlayers = tiedIds;
+  room.tiebreakLetter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  room.tiebreakCategory = CATEGORY_POOL[Math.floor(Math.random() * CATEGORY_POOL.length)];
+  room.tiebreakAnswers = {};
+
+  clearTimeout(room.tiebreakTimer);
+  room.tiebreakTimer = setTimeout(() => resolveTiebreak(room), TIEBREAK_MS);
+
+  broadcast(room, {
+    type: 'tiebreak_start',
+    category: room.tiebreakCategory,
+    letter: room.tiebreakLetter,
+    playerIds: tiedIds,
+    players: room.players.filter(p => tiedIds.includes(p.id)).map(p => p.nickname),
+    maxMs: TIEBREAK_MS,
+  });
+}
+
+function resolveTiebreak(room) {
+  clearTimeout(room.tiebreakTimer);
+  const entries = room.tiebreakPlayers.map(id => {
+    const p = room.players.find(pp => pp.id === id);
+    const a = room.tiebreakAnswers[id];
+    const val = (a && a.value || '').trim();
+    const valid = val.length > 0 && val[0].toLocaleUpperCase('pt-BR') === room.tiebreakLetter;
+    return {
+      id,
+      nickname: p ? p.nickname : 'Jogador',
+      value: capitalizeFirst(val),
+      valid,
+      submittedAt: a ? a.submittedAt : Infinity,
+    };
+  });
+  entries.sort((x, y) => {
+    if (x.valid !== y.valid) return x.valid ? -1 : 1;
+    return x.submittedAt - y.submittedAt;
+  });
+
+  room.tiebreakDone = true;
+  room.tiebreakOrder = entries.map(e => e.id);
+
+  broadcast(room, {
+    type: 'tiebreak_result',
+    category: room.tiebreakCategory,
+    letter: room.tiebreakLetter,
+    entries,
+    winnerId: entries.length ? entries[0].id : null,
+  });
+
+  room.phase = 'podium';
+  broadcast(room, { type: 'game_over', leaderboard: buildLeaderboard(room) });
 }
 
 function nextRoundOrEnd(room) {
   room.activeChallenge = null;
   clearTimeout(room.challengeTimer);
   if (room.currentRound >= room.totalRounds) {
-    room.phase = 'podium';
-    broadcast(room, {
-      type: 'game_over',
-      leaderboard: room.players
-        .map(p => ({ id: p.id, nickname: p.nickname, score: p.score }))
-        .sort((a, b) => b.score - a.score),
-    });
+    checkForTieOrEnd(room);
   } else {
     room.currentRound += 1;
     startRound(room);
@@ -238,6 +336,15 @@ wss.on('connection', (ws) => {
         lastResults: null,
         activeChallenge: null,
         challengeTimer: null,
+        voteDurationMs: DEFAULT_VOTE_MS,
+        tiebreakEnabled: true,
+        bahiaEnabled: false,
+        bahiaRoundNumber: null,
+        isBahiaRound: false,
+        tiebreakDone: false,
+        tiebreakOrder: null,
+        tiebreakPlayers: [],
+        tiebreakTimer: null,
       };
       rooms.set(code, room);
       ws.roomCode = code;
@@ -269,6 +376,25 @@ wss.on('connection', (ws) => {
       return;
     }
 
+    if (msg.type === 'set_vote_duration' && ws.id === room.hostId && room.phase === 'lobby') {
+      const ms = parseInt(msg.voteDurationMs, 10);
+      if (VOTE_DURATION_OPTIONS.includes(ms)) room.voteDurationMs = ms;
+      broadcastState(room);
+      return;
+    }
+
+    if (msg.type === 'set_tiebreak' && ws.id === room.hostId && room.phase === 'lobby') {
+      room.tiebreakEnabled = !!msg.enabled;
+      broadcastState(room);
+      return;
+    }
+
+    if (msg.type === 'set_bahia' && ws.id === room.hostId && room.phase === 'lobby') {
+      room.bahiaEnabled = !!msg.enabled;
+      broadcastState(room);
+      return;
+    }
+
     if (msg.type === 'start_game' && ws.id === room.hostId && room.phase === 'lobby') {
       if (room.players.length < 2) {
         const player = room.players.find(p => p.id === ws.id);
@@ -276,6 +402,13 @@ wss.on('connection', (ws) => {
         return;
       }
       room.currentRound = 1;
+      room.tiebreakDone = false;
+      room.tiebreakOrder = null;
+      if (room.bahiaEnabled && room.totalRounds > 2) {
+        room.bahiaRoundNumber = 2 + Math.floor(Math.random() * (room.totalRounds - 2));
+      } else {
+        room.bahiaRoundNumber = room.bahiaEnabled ? room.totalRounds : null;
+      }
       startRound(room);
       return;
     }
@@ -321,15 +454,24 @@ wss.on('connection', (ws) => {
         targetNickname: entry.nickname,
         value: entry.value,
         raisedBy: room.activeChallenge.raisedBy,
-        voteMs: CHALLENGE_VOTE_MS,
+        voteMs: room.voteDurationMs,
       });
       clearTimeout(room.challengeTimer);
-      room.challengeTimer = setTimeout(() => resolveChallenge(room), CHALLENGE_VOTE_MS);
+      room.challengeTimer = setTimeout(() => resolveChallenge(room), room.voteDurationMs);
       return;
     }
 
     if (msg.type === 'vote_challenge' && room.activeChallenge && ws.id !== room.activeChallenge.targetPlayerId) {
       room.activeChallenge.votes[ws.id] = !!msg.valid;
+      return;
+    }
+
+    if (msg.type === 'tiebreak_answer' && room.phase === 'tiebreak' && room.tiebreakPlayers.includes(ws.id)) {
+      if (room.tiebreakAnswers[ws.id]) return;
+      room.tiebreakAnswers[ws.id] = { value: msg.value || '', submittedAt: Date.now() };
+      if (room.tiebreakPlayers.every(id => room.tiebreakAnswers[id])) {
+        resolveTiebreak(room);
+      }
       return;
     }
 
@@ -343,6 +485,11 @@ wss.on('connection', (ws) => {
       room.currentRound = 0;
       room.currentCategories = [];
       room.remainingCategories = [...CATEGORY_POOL];
+      room.tiebreakDone = false;
+      room.tiebreakOrder = null;
+      room.tiebreakPlayers = [];
+      room.bahiaRoundNumber = null;
+      room.isBahiaRound = false;
       for (const p of room.players) p.score = 0;
       broadcastState(room);
       return;

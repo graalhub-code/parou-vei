@@ -60,6 +60,18 @@
     <div id="config-host" class="hidden">
       <p class="label">Rodadas</p>
       <div class="chips" id="chips-rodadas"></div>
+
+      <p class="label">Duração da votação de dúvida</p>
+      <div class="chips" id="chips-votacao"></div>
+
+      <label class="toggle-linha">
+        <span>Rodada de desempate</span>
+        <input type="checkbox" id="toggle-desempate" checked />
+      </label>
+      <label class="toggle-linha">
+        <span>Rodada baiana surpresa 🎉</span>
+        <input type="checkbox" id="toggle-bahia" />
+      </label>
     </div>
 
     <p id="lobby-espera" class="hint hidden">Aguardando o host iniciar a partida...</p>
@@ -69,6 +81,7 @@
   </section>
 
   <section id="screen-jogo" class="screen">
+    <div id="banner-bahia" class="banner-bahia hidden">Rodada baiana! 🎉</div>
     <div class="jogo-topo">
       <span class="rodada-info" id="jogo-rodada">Rodada 1/7</span>
       <span class="letra" id="jogo-letra">A</span>
@@ -108,8 +121,27 @@
     </div>
   </section>
 
+  <section id="screen-desempate" class="screen">
+    <p class="label" style="text-align:center">Desempate!</p>
+    <p class="subtitle" id="desempate-titulo" style="text-align:center">Fulano e Ciclano empataram</p>
+    <div class="jogo-topo">
+      <span class="rodada-info" id="desempate-categoria">Categoria</span>
+      <span class="letra" id="desempate-letra">A</span>
+      <div class="timer" id="desempate-timer">20s</div>
+    </div>
+    <div id="desempate-campo" class="campos hidden">
+      <div class="campo-item">
+        <label id="desempate-categoria-label">Categoria</label>
+        <input id="desempate-input" type="text" autocomplete="off" />
+      </div>
+    </div>
+    <button id="btn-desempate-enviar" class="btn btn-primary hidden">Desempate, vei!</button>
+    <p id="desempate-espera" class="hint hidden">Aguardando os jogadores empatados responderem...</p>
+  </section>
+
   <section id="screen-podio" class="screen">
     <p class="label" style="text-align:center">Fim de partida</p>
+    <div id="confete" class="confete"></div>
     <div id="podio" class="podio"></div>
     <button id="btn-jogar-de-novo" class="btn btn-primary hidden">Jogar novamente</button>
   </section>

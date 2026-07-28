@@ -144,6 +144,10 @@ input:focus { border-color: var(--coral); }
 
 .campos { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .campo-item label { font-size: 11px; color: var(--coral-texto); display: block; margin-bottom: 2px; }
+.campo-item.baiana label { color: var(--amber-escuro); font-weight: 700; }
+.campo-item.baiana input {
+  border: 2px solid var(--amber); background: #FFF8EA;
+}
 
 .banner-parou {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -195,3 +199,17 @@ input:focus { border-color: var(--coral); }
   background: var(--danger); color: #FCEBEB; font-size: 13px; padding: 8px 16px;
   border-radius: 999px; z-index: 50; max-width: 90%; text-align: center;
 }
+
+.toggle-linha {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; color: var(--coral-escuro); background: var(--branco);
+  padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; cursor: pointer;
+}
+.toggle-linha input { width: auto; margin: 0; height: auto; accent-color: var(--coral); }
+
+.banner-bahia {
+  background: var(--amber); color: var(--amber-escuro); font-weight: 700; font-family: 'Baloo 2', sans-serif;
+  text-align: center; padding: 8px; border-radius: 12px; margin-bottom: 12px; font-size: 14px;
+}
+
+.confete { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
