@@ -42,13 +42,13 @@ function capitalizeFirst(text) {
   return text.charAt(0).toLocaleUpperCase('pt-BR') + text.slice(1);
 }
 
-function pickRoundCategories(room) {
-  if (room.remainingCategories.length < CATEGORIES_PER_ROUND) {
+function pickRoundCategories(room, count = CATEGORIES_PER_ROUND) {
+  if (room.remainingCategories.length < count) {
     room.remainingCategories = [...CATEGORY_POOL];
   }
   const pool = [...room.remainingCategories];
   const picked = [];
-  for (let i = 0; i < CATEGORIES_PER_ROUND && pool.length > 0; i++) {
+  for (let i = 0; i < count && pool.length > 0; i++) {
     const idx = Math.floor(Math.random() * pool.length);
     picked.push(pool[idx]);
     pool.splice(idx, 1);
@@ -91,6 +91,7 @@ function roomPublicState(room) {
     currentRound: room.currentRound,
     letter: room.letter,
     categories: room.currentCategories || [],
+    bahiaCategory: room.currentBahiaCategory || null,
     voteDurationMs: room.voteDurationMs,
     tiebreakEnabled: room.tiebreakEnabled,
     bahiaEnabled: room.bahiaEnabled,
@@ -118,9 +119,17 @@ function startRound(room) {
   room.letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
   const isBahia = room.bahiaEnabled && room.currentRound === room.bahiaRoundNumber;
   room.isBahiaRound = isBahia;
-  room.currentCategories = isBahia
-    ? pickRandomCategories(BAHIA_CATEGORY_POOL, CATEGORIES_PER_ROUND)
-    : pickRoundCategories(room);
+  let bahiaCategory = null;
+  if (isBahia) {
+    const normais = pickRoundCategories(room, CATEGORIES_PER_ROUND - 1);
+    bahiaCategory = pickRandomCategories(BAHIA_CATEGORY_POOL, 1)[0];
+    const posicao = Math.floor(Math.random() * (normais.length + 1));
+    normais.splice(posicao, 0, bahiaCategory);
+    room.currentCategories = normais;
+  } else {
+    room.currentCategories = pickRoundCategories(room);
+  }
+  room.currentBahiaCategory = bahiaCategory;
   room.answers = {};
   room.frozen = false;
   room.freezeDeadline = null;
@@ -133,6 +142,7 @@ function startRound(room) {
     type: 'round_start',
     letter: room.letter,
     categories: room.currentCategories,
+    bahiaCategory,
     currentRound: room.currentRound,
     totalRounds: room.totalRounds,
     maxMs: ROUND_MAX_MS,
@@ -328,6 +338,7 @@ wss.on('connection', (ws) => {
         currentRound: 0,
         letter: null,
         currentCategories: [],
+        currentBahiaCategory: null,
         remainingCategories: [...CATEGORY_POOL],
         answers: {},
         frozen: false,
@@ -514,6 +525,7 @@ wss.on('connection', (ws) => {
       room.tiebreakPlayers = [];
       room.bahiaRoundNumber = null;
       room.isBahiaRound = false;
+      room.currentBahiaCategory = null;
       for (const p of room.players) p.score = 0;
       broadcastState(room);
       return;

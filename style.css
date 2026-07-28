@@ -88,6 +88,16 @@ input:focus { border-color: var(--coral); }
 .dot-d { bottom: 16px; left: 18px; width: 6px; height: 6px; background: #F0997B; }
 .dot-e { top: 46%; left: 7px; width: 5px; height: 5px; background: var(--teal); opacity: 0.7; }
 .dot-f { top: 62%; right: 6px; width: 6px; height: 6px; background: #7F77DD; opacity: 0.6; }
+.dot-g { top: 8%; left: 10px; width: 6px; height: 6px; background: var(--amber); opacity: 0.5; }
+.dot-h { top: 17%; right: 9px; width: 5px; height: 5px; background: #7F77DD; opacity: 0.6; }
+.dot-i { top: 28%; left: 14px; width: 7px; height: 7px; background: var(--coral); opacity: 0.3; }
+.dot-j { top: 37%; right: 15px; width: 5px; height: 5px; background: var(--teal); opacity: 0.5; }
+.dot-k { top: 53%; left: 8px; width: 6px; height: 6px; background: #F0997B; opacity: 0.5; }
+.dot-l { top: 69%; right: 11px; width: 6px; height: 6px; background: var(--amber); opacity: 0.45; }
+.dot-m { top: 77%; left: 16px; width: 5px; height: 5px; background: #7F77DD; opacity: 0.4; }
+.dot-n { top: 87%; right: 14px; width: 7px; height: 7px; background: var(--coral); opacity: 0.3; }
+.dot-o { top: 93%; left: 12px; width: 5px; height: 5px; background: var(--teal); opacity: 0.5; }
+.dot-p { top: 12%; right: 20px; width: 4px; height: 4px; background: var(--amber); opacity: 0.6; }
 
 .logo-tile { position: relative; width: 84px; height: 84px; margin: 0 auto 20px; }
 .tile { position: absolute; border-radius: 16px; }
@@ -214,11 +224,12 @@ input:focus { border-color: var(--coral); }
 
 .confete { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
 .confete-pedaco {
-  position: absolute; top: -10px; width: 8px; height: 14px; opacity: 0.9;
-  animation: cair linear forwards;
+  position: absolute; top: -60px; width: 5px; border-radius: 3px; opacity: 0.85;
+  animation: cair ease-in forwards;
 }
 @keyframes cair {
-  to { transform: translateY(620px) rotate(540deg); opacity: 0.2; }
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.9; }
+  100% { transform: translateY(680px) translateX(var(--balanco, 0px)) rotate(var(--giro, 20deg)); opacity: 0; }
 }
 
 .btn-config {

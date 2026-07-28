@@ -201,9 +201,10 @@ function renderRound(msg) {
   const wrap = el('campos-categorias');
   wrap.innerHTML = '';
   for (const cat of msg.categories) {
+    const ehBaiana = msg.isBahia && cat === msg.bahiaCategory;
     const item = document.createElement('div');
-    item.className = 'campo-item' + (msg.isBahia ? ' baiana' : '');
-    const rotulo = msg.isBahia ? `${cat} 🎉` : cat;
+    item.className = 'campo-item' + (ehBaiana ? ' baiana' : '');
+    const rotulo = ehBaiana ? `${cat} 🥁` : cat;
     item.innerHTML = `<label>${rotulo}</label><input type="text" data-cat="${cat}" autocomplete="off" />`;
     wrap.appendChild(item);
     const input = item.querySelector('input');
@@ -378,22 +379,24 @@ el('btn-desempate-enviar').onclick = () => {
   el('desempate-espera').textContent = 'Resposta enviada. Aguardando o outro jogador...';
 };
 
-// ---------- confete ----------
+// ---------- serpentina de campeonato ----------
 function lancarConfete() {
-  const cores = ['#D85A30', '#5DCAA5', '#FAC775', '#7F77DD', '#F0997B'];
+  const cores = ['#D85A30', '#5DCAA5', '#FAC775'];
   const container = el('confete');
   container.innerHTML = '';
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 20; i++) {
     const pedaco = document.createElement('div');
     pedaco.className = 'confete-pedaco';
     pedaco.style.left = Math.random() * 100 + '%';
     pedaco.style.background = cores[Math.floor(Math.random() * cores.length)];
-    pedaco.style.animationDuration = (2 + Math.random() * 1.5) + 's';
-    pedaco.style.animationDelay = (Math.random() * 0.6) + 's';
-    pedaco.style.transform = `rotate(${Math.random() * 360}deg)`;
+    pedaco.style.height = (36 + Math.random() * 34) + 'px';
+    pedaco.style.animationDuration = (3.8 + Math.random() * 2.2) + 's';
+    pedaco.style.animationDelay = (Math.random() * 0.7) + 's';
+    pedaco.style.setProperty('--balanco', (Math.random() * 40 - 20) + 'px');
+    pedaco.style.setProperty('--giro', (Math.random() * 100 - 50) + 'deg');
     container.appendChild(pedaco);
   }
-  setTimeout(() => { container.innerHTML = ''; }, 4200);
+  setTimeout(() => { container.innerHTML = ''; }, 6200);
 }
 
 // ---------- podio ----------
