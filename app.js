@@ -113,7 +113,7 @@ function renderLobby(room) {
     div.className = 'jogador-item';
     div.innerHTML = `<div class="avatar">${p.nickname.slice(0, 2).toUpperCase()}</div>
       <span class="jogador-nome">${p.nickname}${p.id === meId ? ' (você)' : ''}</span>
-      ${p.id === room.hostId ? '<i class="ti ti-crown crown"></i>' : ''}`;
+      ${p.id === room.hostId ? '<span class="crown">👑</span>' : ''}`;
     lista.appendChild(div);
   }
 
@@ -277,7 +277,7 @@ function aplicarResultadoVotacao(msg) {
 // ---------- podio ----------
 function renderPodio(leaderboard) {
   const cores = ['#FAC775', '#D3D1C7', '#F0997B'];
-  const coresTrofeu = ['#BA7517', '#888780', '#D85A30'];
+  const medalhas = ['🥇', '🥈', '🥉'];
   const alturas = [90, 60, 44];
   const top3 = leaderboard.slice(0, 3);
   const ordemVisual = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3;
@@ -290,7 +290,7 @@ function renderPodio(leaderboard) {
     const div = document.createElement('div');
     div.className = 'podio-item';
     div.innerHTML = `
-      <i class="ti ti-trophy trofeu" style="color:${coresTrofeu[posicaoReal]}"></i>
+      <span class="trofeu">${medalhas[posicaoReal]}</span>
       <div class="podio-barra" style="height:${alturas[posicaoReal]}px;background:${cores[posicaoReal]}">
         <span>${posicaoReal + 1}º</span>
       </div>
