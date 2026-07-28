@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Parou, vei!</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="phone">
+
+  <section id="screen-entrada" class="screen active">
+    <div class="dot dot-a"></div>
+    <div class="dot dot-b"></div>
+    <div class="logo-tile">
+      <div class="tile tile-back-1"></div>
+      <div class="tile tile-back-2"></div>
+      <div class="tile tile-front"><span>P</span></div>
+      <div class="dash dash1"></div>
+      <div class="dash dash2"></div>
+      <div class="dash dash3"></div>
+    </div>
+    <h1>Parou, vei!</h1>
+    <p class="subtitle">Quem for mais rápido, grita.</p>
+
+    <input id="input-nickname" type="text" placeholder="Seu apelido" maxlength="16" />
+
+    <button id="btn-criar-sala" class="btn btn-primary">Criar sala</button>
+    <button id="btn-mostrar-entrar" class="btn btn-outline">Entrar com código</button>
+
+    <div id="bloco-entrar-codigo" class="hidden">
+      <input id="input-codigo" type="text" placeholder="Código da sala" maxlength="5" style="text-transform:uppercase" />
+      <button id="btn-entrar-sala" class="btn btn-primary">Entrar na sala</button>
+    </div>
+
+    <p id="erro-entrada" class="erro hidden"></p>
+  </section>
+
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-header">
+      <div>
+        <p class="label">Código</p>
+        <p class="codigo" id="lobby-codigo">------</p>
+      </div>
+    </div>
+
+    <p class="label" id="lobby-contagem">Jogadores (0/10)</p>
+    <div id="lista-jogadores" class="lista-jogadores"></div>
+
+    <div id="config-host" class="hidden">
+      <p class="label">Rodadas</p>
+      <div class="chips" id="chips-rodadas"></div>
+    </div>
+
+    <p id="lobby-espera" class="hint hidden">Aguardando o host iniciar a partida...</p>
+
+    <button id="btn-iniciar" class="btn btn-primary hidden">Iniciar partida</button>
+  </section>
+
+  <section id="screen-jogo" class="screen">
+    <div class="jogo-topo">
+      <span class="rodada-info" id="jogo-rodada">Rodada 1/7</span>
+      <span class="letra" id="jogo-letra">A</span>
+      <div class="timer" id="jogo-timer">60s</div>
+    </div>
+
+    <div id="campos-categorias" class="campos"></div>
+
+    <button id="btn-parei" class="btn btn-primary">Parei, vei!</button>
+
+    <div id="banner-parou" class="banner-parou hidden">
+      <div class="banner-caixa">
+        <i class="hand">✋</i>
+        <p id="banner-texto">Alguém parou!</p>
+        <p class="banner-sub">Congelando respostas...</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-resultado" class="screen">
+    <p class="label" id="resultado-titulo">Resultado da rodada</p>
+    <div id="resultado-lista" class="resultado-lista"></div>
+    <button id="btn-proxima-rodada" class="btn btn-primary hidden">Próxima rodada</button>
+    <p id="resultado-espera" class="hint hidden">Aguardando o host avançar...</p>
+
+    <div id="overlay-votacao" class="banner-parou hidden">
+      <div class="votacao-caixa">
+        <p class="votacao-titulo" id="votacao-titulo">Alguém duvidou de uma resposta</p>
+        <p class="votacao-resposta" id="votacao-resposta">Jogador — resposta</p>
+        <div class="votacao-timer" id="votacao-timer">10s</div>
+        <div class="votacao-botoes">
+          <button id="btn-voto-valido" class="btn btn-outline" style="border-color:var(--teal);color:var(--teal-escuro)">Válido</button>
+          <button id="btn-voto-invalido" class="btn btn-outline" style="border-color:var(--danger);color:var(--danger-escuro)">Inválido</button>
+        </div>
+        <p class="votacao-status" id="votacao-status"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-podio" class="screen">
+    <p class="label" style="text-align:center">Fim de partida</p>
+    <div id="podio" class="podio"></div>
+    <button id="btn-jogar-de-novo" class="btn btn-primary hidden">Jogar novamente</button>
+  </section>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

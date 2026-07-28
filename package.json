@@ -1,0 +1,14 @@
+{
+  "name": "parou-vei",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Protótipo funcional do jogo Parou, vei! (Stop/Adedonha multiplayer para celular)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
