@@ -204,6 +204,19 @@ input:focus { border-color: var(--coral); }
 
 .trofeu { font-size: 22px; }
 
+.podio-stats { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.podio-stat-item {
+  background: var(--branco); border-radius: 12px; padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(74, 27, 12, 0.06); display: flex; align-items: center; gap: 10px;
+}
+.podio-stat-icone {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--cinza);
+  display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+}
+.podio-stat-texto { font-size: 13px; line-height: 1.35; }
+.podio-stat-texto strong { color: var(--coral-texto); }
+.podio-stats-aviso { font-size: 11px; color: var(--cinza-texto); text-align: center; margin: -6px 0 14px; }
+
 .toast {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
   background: var(--danger); color: #FCEBEB; font-size: 13px; padding: 8px 16px;

@@ -91,7 +91,7 @@ function handleMessage(msg) {
     return;
   }
   if (msg.type === 'game_over') {
-    renderPodio(msg.leaderboard);
+    renderPodio(msg.leaderboard, msg.stats);
     showScreen('podio');
     return;
   }
@@ -400,7 +400,51 @@ function lancarConfete() {
 }
 
 // ---------- podio ----------
-function renderPodio(leaderboard) {
+function formatarNomes(nomes) {
+  if (nomes.length === 1) return nomes[0];
+  if (nomes.length === 2) return `${nomes[0]} e ${nomes[1]}`;
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+}
+
+function renderPodioStats(stats) {
+  const wrap = el('podio-stats');
+  wrap.innerHTML = '';
+  if (!stats) {
+    wrap.classList.add('hidden');
+    el('podio-stats-aviso').classList.add('hidden');
+    return;
+  }
+  const itens = [];
+  if (stats.maisRapido && stats.maisRapido.count > 0) {
+    const vezes = stats.maisRapido.count === 1 ? 'vez' : 'vezes';
+    itens.push({
+      icone: '⚡',
+      texto: `<strong>${formatarNomes(stats.maisRapido.players)}</strong> ${stats.maisRapido.players.length > 1 ? 'foram' : 'foi'} quem mais gritou "Parei, vei!" primeiro (${stats.maisRapido.count} ${vezes})`,
+    });
+  }
+  if (stats.maisRepetiu && stats.maisRepetiu.count > 0) {
+    const vezes = stats.maisRepetiu.count === 1 ? 'vez' : 'vezes';
+    itens.push({
+      icone: '🔁',
+      texto: `<strong>${formatarNomes(stats.maisRepetiu.players)}</strong> ${stats.maisRepetiu.players.length > 1 ? 'foram' : 'foi'} quem mais repetiu resposta com outro jogador (${stats.maisRepetiu.count} ${vezes})`,
+    });
+  }
+  if (itens.length === 0) {
+    wrap.classList.add('hidden');
+    el('podio-stats-aviso').classList.add('hidden');
+    return;
+  }
+  for (const item of itens) {
+    const div = document.createElement('div');
+    div.className = 'podio-stat-item';
+    div.innerHTML = `<span class="podio-stat-icone">${item.icone}</span><span class="podio-stat-texto">${item.texto}</span>`;
+    wrap.appendChild(div);
+  }
+  wrap.classList.remove('hidden');
+  el('podio-stats-aviso').classList.remove('hidden');
+}
+
+function renderPodio(leaderboard, stats) {
   lancarConfete();
   const cores = ['#FAC775', '#D3D1C7', '#F0997B'];
   const medalhas = ['🥇', '🥈', '🥉'];
@@ -424,6 +468,8 @@ function renderPodio(leaderboard) {
       <p class="podio-pts">${p.score} pts</p>`;
     podio.appendChild(div);
   });
+
+  renderPodioStats(stats);
 
   const souHost = meId === currentRoom?.hostId;
   el('btn-jogar-de-novo').classList.toggle('hidden', !souHost);

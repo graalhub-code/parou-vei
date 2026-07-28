@@ -82,6 +82,25 @@ function pickRandomCategories(pool, count) {
   return picked;
 }
 
+function buildGameStats(room) {
+  function topEntries(counts) {
+    const values = Object.values(counts);
+    const max = values.length ? Math.max(...values) : 0;
+    if (max <= 0) return { count: 0, players: [] };
+    const ids = Object.keys(counts).filter(id => counts[id] === max);
+    const players = ids.map(id => {
+      const p = room.players.find(pp => pp.id === id);
+      return p ? p.nickname : 'Jogador';
+    });
+    return { count: max, players };
+  }
+  const stats = room.gameStats || { stopCounts: {}, dupCounts: {} };
+  return {
+    maisRapido: topEntries(stats.stopCounts),
+    maisRepetiu: topEntries(stats.dupCounts),
+  };
+}
+
 function buildLeaderboard(room) {
   const order = room.tiebreakOrder || [];
   return room.players
@@ -207,6 +226,18 @@ function finalizeRound(room, stoppedByPlayerId) {
   const { perCategory, roundTotals } = scoreRound(room);
   const stopper = room.players.find(p => p.id === stoppedByPlayerId);
 
+  room.gameStats = room.gameStats || { stopCounts: {}, dupCounts: {} };
+  if (stoppedByPlayerId) {
+    room.gameStats.stopCounts[stoppedByPlayerId] = (room.gameStats.stopCounts[stoppedByPlayerId] || 0) + 1;
+  }
+  for (const cat of room.currentCategories) {
+    for (const e of perCategory[cat]) {
+      if (e.valid && e.points === 5) {
+        room.gameStats.dupCounts[e.playerId] = (room.gameStats.dupCounts[e.playerId] || 0) + 1;
+      }
+    }
+  }
+
   room.lastResults = { perCategory, roundTotals };
   room.activeChallenge = null;
   clearTimeout(room.challengeTimer);
@@ -264,7 +295,7 @@ function checkForTieOrEnd(room) {
   }
 
   room.phase = 'podium';
-  broadcast(room, { type: 'game_over', leaderboard: buildLeaderboard(room) });
+  broadcast(room, { type: 'game_over', leaderboard: buildLeaderboard(room), stats: buildGameStats(room) });
 }
 
 function startTiebreak(room, tiedIds) {
@@ -319,7 +350,7 @@ function resolveTiebreak(room) {
   });
 
   room.phase = 'podium';
-  broadcast(room, { type: 'game_over', leaderboard: buildLeaderboard(room) });
+  broadcast(room, { type: 'game_over', leaderboard: buildLeaderboard(room), stats: buildGameStats(room) });
 }
 
 function nextRoundOrEnd(room) {
@@ -353,6 +384,7 @@ wss.on('connection', (ws) => {
         letter: null,
         currentCategories: [],
         currentBahiaCategory: null,
+        gameStats: { stopCounts: {}, dupCounts: {} },
         remainingCategories: [...CATEGORY_POOL],
         answers: {},
         frozen: false,
@@ -451,6 +483,7 @@ wss.on('connection', (ws) => {
         return;
       }
       room.currentRound = 1;
+      room.gameStats = { stopCounts: {}, dupCounts: {} };
       room.tiebreakDone = false;
       room.tiebreakOrder = null;
       room.bahiaRoundNumbers = room.bahiaEnabled ? pickBahiaRoundNumbers(room.totalRounds) : [];
@@ -536,6 +569,7 @@ wss.on('connection', (ws) => {
       room.bahiaRoundNumbers = [];
       room.isBahiaRound = false;
       room.currentBahiaCategory = null;
+      room.gameStats = { stopCounts: {}, dupCounts: {} };
       for (const p of room.players) p.score = 0;
       broadcastState(room);
       return;
