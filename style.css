@@ -212,4 +212,20 @@ input:focus { border-color: var(--coral); }
   text-align: center; padding: 8px; border-radius: 12px; margin-bottom: 12px; font-size: 14px;
 }
 
-.confete { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confete { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+.confete-pedaco {
+  position: absolute; top: -10px; width: 8px; height: 14px; opacity: 0.9;
+  animation: cair linear forwards;
+}
+@keyframes cair {
+  to { transform: translateY(620px) rotate(540deg); opacity: 0.2; }
+}
+
+.btn-config {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid #E9C9BE;
+  background: var(--branco); font-size: 17px; cursor: pointer;
+}
+
+.linha-codigo { display: flex; gap: 8px; margin-bottom: 16px; }
+.linha-codigo input { margin-bottom: 0; }
+.btn-compacto { width: auto; padding: 0 18px; white-space: nowrap; margin-bottom: 0; }

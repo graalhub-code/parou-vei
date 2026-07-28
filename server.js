@@ -395,6 +395,30 @@ wss.on('connection', (ws) => {
       return;
     }
 
+    if (msg.type === 'set_room_code' && ws.id === room.hostId && room.phase === 'lobby') {
+      const newCode = (msg.code || '').toUpperCase().trim();
+      if (!/^[A-Z0-9]{4,8}$/.test(newCode)) {
+        const player = room.players.find(p => p.id === ws.id);
+        if (player) sendTo(player, { type: 'error', message: 'Código inválido. Use de 4 a 8 letras ou números.' });
+        return;
+      }
+      if (newCode !== room.code && rooms.has(newCode)) {
+        const player = room.players.find(p => p.id === ws.id);
+        if (player) sendTo(player, { type: 'error', message: 'Esse código já está em uso.' });
+        return;
+      }
+      if (newCode !== room.code) {
+        rooms.delete(room.code);
+        room.code = newCode;
+        rooms.set(newCode, room);
+        for (const p of room.players) {
+          if (p.ws) p.ws.roomCode = newCode;
+        }
+      }
+      broadcastState(room);
+      return;
+    }
+
     if (msg.type === 'start_game' && ws.id === room.hostId && room.phase === 'lobby') {
       if (room.players.length < 2) {
         const player = room.players.find(p => p.id === ws.id);

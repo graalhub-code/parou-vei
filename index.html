@@ -52,32 +52,45 @@
         <p class="label">Código</p>
         <p class="codigo" id="lobby-codigo">------</p>
       </div>
+      <button id="btn-abrir-config" class="btn-config hidden" title="Configurações">⚙️</button>
     </div>
 
     <p class="label" id="lobby-contagem">Jogadores (0/10)</p>
     <div id="lista-jogadores" class="lista-jogadores"></div>
 
-    <div id="config-host" class="hidden">
-      <p class="label">Rodadas</p>
-      <div class="chips" id="chips-rodadas"></div>
+    <button id="btn-chamada-voz" class="btn btn-outline">🎙️ Chamada de voz</button>
 
-      <p class="label">Duração da votação de dúvida</p>
-      <div class="chips" id="chips-votacao"></div>
-
-      <label class="toggle-linha">
-        <span>Rodada de desempate</span>
-        <input type="checkbox" id="toggle-desempate" checked />
-      </label>
-      <label class="toggle-linha">
-        <span>Rodada baiana surpresa 🎉</span>
-        <input type="checkbox" id="toggle-bahia" />
-      </label>
-    </div>
-
-    <p id="lobby-espera" class="hint hidden">Aguardando o host iniciar a partida...</p>
+    <p id="lobby-espera" class="hint hidden">Aguardando o host configurar e iniciar a partida...</p>
 
     <button id="btn-iniciar" class="btn btn-primary hidden">Iniciar partida</button>
     <button id="btn-voltar-lobby" class="btn btn-outline">Voltar</button>
+  </section>
+
+  <section id="screen-config" class="screen">
+    <p class="label" style="text-align:center">Configurações da partida</p>
+
+    <p class="label">Código da sala</p>
+    <div class="linha-codigo">
+      <input id="input-codigo-editar" type="text" maxlength="8" style="text-transform:uppercase" />
+      <button id="btn-salvar-codigo" class="btn btn-outline btn-compacto">Salvar</button>
+    </div>
+
+    <p class="label">Rodadas</p>
+    <div class="chips" id="chips-rodadas"></div>
+
+    <p class="label">Duração da votação de dúvida</p>
+    <div class="chips" id="chips-votacao"></div>
+
+    <label class="toggle-linha">
+      <span>Rodada de desempate</span>
+      <input type="checkbox" id="toggle-desempate" checked />
+    </label>
+    <label class="toggle-linha">
+      <span>Rodada baiana surpresa 🎉</span>
+      <input type="checkbox" id="toggle-bahia" />
+    </label>
+
+    <button id="btn-fechar-config" class="btn btn-primary" style="margin-top:auto">Voltar pro lobby</button>
   </section>
 
   <section id="screen-jogo" class="screen">

@@ -3,7 +3,7 @@ function capitalizeFirst(texto) {
   if (!texto) return texto;
   return texto.charAt(0).toLocaleUpperCase('pt-BR') + texto.slice(1);
 }
-const screens = ['entrada', 'lobby', 'jogo', 'resultado', 'desempate', 'podio'];
+const screens = ['entrada', 'lobby', 'config', 'jogo', 'resultado', 'desempate', 'podio'];
 function showScreen(name) {
   for (const s of screens) el('screen-' + s).classList.toggle('active', s === name);
 }
@@ -132,9 +132,13 @@ function renderLobby(room) {
   }
 
   const souHost = meId === room.hostId;
-  el('config-host').classList.toggle('hidden', !souHost);
+  el('btn-abrir-config').classList.toggle('hidden', !souHost);
   el('btn-iniciar').classList.toggle('hidden', !souHost);
   el('lobby-espera').classList.toggle('hidden', souHost);
+
+  if (souHost && document.activeElement !== el('input-codigo-editar')) {
+    el('input-codigo-editar').value = room.code;
+  }
 
   if (souHost) {
     const chipsWrap = el('chips-rodadas');
@@ -171,6 +175,19 @@ el('btn-iniciar').onclick = () => {
 };
 el('btn-voltar-lobby').onclick = () => {
   location.reload();
+};
+el('btn-abrir-config').onclick = () => showScreen('config');
+el('btn-fechar-config').onclick = () => showScreen('lobby');
+el('btn-salvar-codigo').onclick = () => {
+  const novoCodigo = el('input-codigo-editar').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,8}$/.test(novoCodigo)) {
+    return showToast('O código precisa ter de 4 a 8 letras ou números.');
+  }
+  send({ type: 'set_room_code', code: novoCodigo });
+};
+el('btn-chamada-voz').onclick = () => {
+  if (!currentRoom) return;
+  window.open(`https://meet.jit.si/parouvei-${currentRoom.code}`, '_blank');
 };
 
 // ---------- jogo ----------
@@ -361,8 +378,27 @@ el('btn-desempate-enviar').onclick = () => {
   el('desempate-espera').textContent = 'Resposta enviada. Aguardando o outro jogador...';
 };
 
+// ---------- confete ----------
+function lancarConfete() {
+  const cores = ['#D85A30', '#5DCAA5', '#FAC775', '#7F77DD', '#F0997B'];
+  const container = el('confete');
+  container.innerHTML = '';
+  for (let i = 0; i < 40; i++) {
+    const pedaco = document.createElement('div');
+    pedaco.className = 'confete-pedaco';
+    pedaco.style.left = Math.random() * 100 + '%';
+    pedaco.style.background = cores[Math.floor(Math.random() * cores.length)];
+    pedaco.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+    pedaco.style.animationDelay = (Math.random() * 0.6) + 's';
+    pedaco.style.transform = `rotate(${Math.random() * 360}deg)`;
+    container.appendChild(pedaco);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 4200);
+}
+
 // ---------- podio ----------
 function renderPodio(leaderboard) {
+  lancarConfete();
   const cores = ['#FAC775', '#D3D1C7', '#F0997B'];
   const medalhas = ['🥇', '🥈', '🥉'];
   const alturas = [90, 60, 44];
