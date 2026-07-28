@@ -1,4 +1,8 @@
 const el = (id) => document.getElementById(id);
+function capitalizeFirst(texto) {
+  if (!texto) return texto;
+  return texto.charAt(0).toLocaleUpperCase('pt-BR') + texto.slice(1);
+}
 const screens = ['entrada', 'lobby', 'jogo', 'resultado', 'podio'];
 function showScreen(name) {
   for (const s of screens) el('screen-' + s).classList.toggle('active', s === name);
@@ -160,6 +164,12 @@ function renderRound(msg) {
     wrap.appendChild(item);
     const input = item.querySelector('input');
     input.oninput = () => {
+      const cursor = input.selectionStart;
+      const capitalizado = capitalizeFirst(input.value);
+      if (capitalizado !== input.value) {
+        input.value = capitalizado;
+        input.setSelectionRange(cursor, cursor);
+      }
       draftAnswers[cat] = input.value;
       send({ type: 'draft', category: cat, value: input.value });
     };

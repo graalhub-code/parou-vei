@@ -10,7 +10,12 @@ app.use(express.static(path.join(__dirname)));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-const CATEGORIES = ['nome', 'cor', 'animal', 'fruta'];
+const CATEGORY_POOL = [
+  'Nome', 'Cor', 'Animal', 'Fruta', 'Objeto', 'Profissão', 'País', 'Filme',
+  'Marca', 'Comida', 'Esporte', 'Cantor ou banda', 'Personagem', 'Roupa',
+  'Instrumento musical', 'Time de futebol', 'Sobrenome', 'Cidade', 'Bebida', 'Verbo',
+];
+const CATEGORIES_PER_ROUND = 4;
 const MAX_PLAYERS = 10;
 const ROUND_MAX_MS = 60000;
 const FREEZE_GRACE_MS = 1000;
@@ -26,6 +31,26 @@ function genCode() {
   return code;
 }
 
+function capitalizeFirst(text) {
+  if (!text) return text;
+  return text.charAt(0).toLocaleUpperCase('pt-BR') + text.slice(1);
+}
+
+function pickRoundCategories(room) {
+  if (room.remainingCategories.length < CATEGORIES_PER_ROUND) {
+    room.remainingCategories = [...CATEGORY_POOL];
+  }
+  const pool = [...room.remainingCategories];
+  const picked = [];
+  for (let i = 0; i < CATEGORIES_PER_ROUND && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    picked.push(pool[idx]);
+    pool.splice(idx, 1);
+  }
+  room.remainingCategories = room.remainingCategories.filter(c => !picked.includes(c));
+  return picked;
+}
+
 function roomPublicState(room) {
   return {
     code: room.code,
@@ -34,7 +59,7 @@ function roomPublicState(room) {
     totalRounds: room.totalRounds,
     currentRound: room.currentRound,
     letter: room.letter,
-    categories: CATEGORIES,
+    categories: room.currentCategories || [],
     players: room.players.map(p => ({ id: p.id, nickname: p.nickname, score: p.score, connected: !!p.ws })),
   };
 }
@@ -57,6 +82,7 @@ function broadcastState(room) {
 function startRound(room) {
   room.phase = 'playing';
   room.letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  room.currentCategories = pickRoundCategories(room);
   room.answers = {};
   room.frozen = false;
   room.freezeDeadline = null;
@@ -68,7 +94,7 @@ function startRound(room) {
   broadcast(room, {
     type: 'round_start',
     letter: room.letter,
-    categories: CATEGORIES,
+    categories: room.currentCategories,
     currentRound: room.currentRound,
     totalRounds: room.totalRounds,
     maxMs: ROUND_MAX_MS,
@@ -77,12 +103,12 @@ function startRound(room) {
 
 function scoreRound(room) {
   const perCategory = {};
-  for (const cat of CATEGORIES) {
+  for (const cat of room.currentCategories) {
     const entries = room.players.map(p => {
       const raw = (room.answers[p.id] && room.answers[p.id][cat]) || '';
       const val = raw.trim();
       const valid = val.length > 0 && val[0].toLocaleUpperCase('pt-BR') === room.letter;
-      return { playerId: p.id, nickname: p.nickname, value: val, valid };
+      return { playerId: p.id, nickname: p.nickname, value: capitalizeFirst(val), valid };
     });
     const normalizedCounts = {};
     for (const e of entries) {
@@ -102,7 +128,7 @@ function scoreRound(room) {
 
   const roundTotals = {};
   for (const p of room.players) roundTotals[p.id] = 0;
-  for (const cat of CATEGORIES) {
+  for (const cat of room.currentCategories) {
     for (const e of perCategory[cat]) roundTotals[e.playerId] += e.points;
   }
   for (const p of room.players) p.score += roundTotals[p.id];
@@ -195,7 +221,7 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'create_room') {
       const code = genCode();
-      const player = { id: ws.id, nickname: (msg.nickname || 'Jogador').slice(0, 16), ws, score: 0 };
+      const player = { id: ws.id, nickname: capitalizeFirst((msg.nickname || 'Jogador').slice(0, 16).trim()), ws, score: 0 };
       const room = {
         code,
         hostId: player.id,
@@ -203,6 +229,8 @@ wss.on('connection', (ws) => {
         totalRounds: 7,
         currentRound: 0,
         letter: null,
+        currentCategories: [],
+        remainingCategories: [...CATEGORY_POOL],
         answers: {},
         frozen: false,
         players: [player],
@@ -223,7 +251,7 @@ wss.on('connection', (ws) => {
       if (!room) return sendTo({ ws }, { type: 'error', message: 'Sala não encontrada.' });
       if (room.phase !== 'lobby') return sendTo({ ws }, { type: 'error', message: 'Essa partida já começou.' });
       if (room.players.length >= MAX_PLAYERS) return sendTo({ ws }, { type: 'error', message: 'Sala cheia (máximo 10).' });
-      const player = { id: ws.id, nickname: (msg.nickname || 'Jogador').slice(0, 16), ws, score: 0 };
+      const player = { id: ws.id, nickname: capitalizeFirst((msg.nickname || 'Jogador').slice(0, 16).trim()), ws, score: 0 };
       room.players.push(player);
       ws.roomCode = room.code;
       sendTo(player, { type: 'joined', you: player.id, room: roomPublicState(room) });
@@ -313,6 +341,8 @@ wss.on('connection', (ws) => {
     if (msg.type === 'play_again' && ws.id === room.hostId && room.phase === 'podium') {
       room.phase = 'lobby';
       room.currentRound = 0;
+      room.currentCategories = [];
+      room.remainingCategories = [...CATEGORY_POOL];
       for (const p of room.players) p.score = 0;
       broadcastState(room);
       return;
