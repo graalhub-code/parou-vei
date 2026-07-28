@@ -57,6 +57,20 @@ function pickRoundCategories(room, count = CATEGORIES_PER_ROUND) {
   return picked;
 }
 
+function pickBahiaRoundNumbers(totalRounds) {
+  if (totalRounds <= 2) return [];
+  const quantidade = Math.min(totalRounds - 2, Math.max(2, Math.ceil(totalRounds / 3)));
+  const candidatos = [];
+  for (let r = 2; r <= totalRounds - 1; r++) candidatos.push(r);
+  const escolhidas = [];
+  for (let i = 0; i < quantidade && candidatos.length > 0; i++) {
+    const idx = Math.floor(Math.random() * candidatos.length);
+    escolhidas.push(candidatos[idx]);
+    candidatos.splice(idx, 1);
+  }
+  return escolhidas;
+}
+
 function pickRandomCategories(pool, count) {
   const copy = [...pool];
   const picked = [];
@@ -117,7 +131,7 @@ function broadcastState(room) {
 function startRound(room) {
   room.phase = 'playing';
   room.letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  const isBahia = room.bahiaEnabled && room.currentRound === room.bahiaRoundNumber;
+  const isBahia = room.bahiaEnabled && (room.bahiaRoundNumbers || []).includes(room.currentRound);
   room.isBahiaRound = isBahia;
   let bahiaCategory = null;
   if (isBahia) {
@@ -350,7 +364,7 @@ wss.on('connection', (ws) => {
         voteDurationMs: DEFAULT_VOTE_MS,
         tiebreakEnabled: true,
         bahiaEnabled: false,
-        bahiaRoundNumber: null,
+        bahiaRoundNumbers: [],
         isBahiaRound: false,
         tiebreakDone: false,
         tiebreakOrder: null,
@@ -439,11 +453,7 @@ wss.on('connection', (ws) => {
       room.currentRound = 1;
       room.tiebreakDone = false;
       room.tiebreakOrder = null;
-      if (room.bahiaEnabled && room.totalRounds > 2) {
-        room.bahiaRoundNumber = 2 + Math.floor(Math.random() * (room.totalRounds - 2));
-      } else {
-        room.bahiaRoundNumber = room.bahiaEnabled ? room.totalRounds : null;
-      }
+      room.bahiaRoundNumbers = room.bahiaEnabled ? pickBahiaRoundNumbers(room.totalRounds) : [];
       startRound(room);
       return;
     }
@@ -523,7 +533,7 @@ wss.on('connection', (ws) => {
       room.tiebreakDone = false;
       room.tiebreakOrder = null;
       room.tiebreakPlayers = [];
-      room.bahiaRoundNumber = null;
+      room.bahiaRoundNumbers = [];
       room.isBahiaRound = false;
       room.currentBahiaCategory = null;
       for (const p of room.players) p.score = 0;
