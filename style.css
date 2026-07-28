@@ -219,7 +219,9 @@ input:focus { border-color: var(--coral); }
 
 .banner-bahia {
   background: var(--amber); color: var(--amber-escuro); font-weight: 700; font-family: 'Baloo 2', sans-serif;
-  text-align: center; padding: 8px; border-radius: 12px; margin-bottom: 12px; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; font-size: 14px; letter-spacing: 0.2px;
+  box-shadow: 0 1px 4px rgba(74, 27, 12, 0.1);
 }
 
 .confete { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }

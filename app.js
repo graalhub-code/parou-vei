@@ -204,7 +204,7 @@ function renderRound(msg) {
     const ehBaiana = msg.isBahia && cat === msg.bahiaCategory;
     const item = document.createElement('div');
     item.className = 'campo-item' + (ehBaiana ? ' baiana' : '');
-    const rotulo = ehBaiana ? `${cat} 🥁` : cat;
+    const rotulo = cat;
     item.innerHTML = `<label>${rotulo}</label><input type="text" data-cat="${cat}" autocomplete="off" />`;
     wrap.appendChild(item);
     const input = item.querySelector('input');
@@ -427,5 +427,16 @@ function renderPodio(leaderboard) {
 
   const souHost = meId === currentRoom?.hostId;
   el('btn-jogar-de-novo').classList.toggle('hidden', !souHost);
+  el('podio-espera').classList.toggle('hidden', souHost);
 }
 el('btn-jogar-de-novo').onclick = () => send({ type: 'play_again' });
+
+el('btn-voltar-inicio').onclick = () => {
+  send({ type: 'leave_room' });
+  currentRoom = null;
+  draftAnswers = {};
+  el('input-nickname').value = '';
+  el('input-codigo').value = '';
+  el('bloco-entrar-codigo').classList.add('hidden');
+  showScreen('entrada');
+};

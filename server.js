@@ -540,6 +540,27 @@ wss.on('connection', (ws) => {
       broadcastState(room);
       return;
     }
+
+    if (msg.type === 'leave_room') {
+      const idx = room.players.findIndex(p => p.id === ws.id);
+      if (idx !== -1) {
+        room.players.splice(idx, 1);
+        if (room.hostId === ws.id) {
+          const nextHost = room.players.find(p => p.ws);
+          if (nextHost) room.hostId = nextHost.id;
+        }
+      }
+      ws.roomCode = null;
+      if (room.players.length === 0) {
+        clearTimeout(room.roundTimer);
+        clearTimeout(room.challengeTimer);
+        clearTimeout(room.tiebreakTimer);
+        rooms.delete(room.code);
+      } else {
+        broadcastState(room);
+      }
+      return;
+    }
   });
 
   ws.on('close', () => {
